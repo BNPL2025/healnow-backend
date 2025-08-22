@@ -1,6 +1,5 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
-import crypto from "crypto";
 import { IUser } from "../types/index.js";
 
 const userSchema = new Schema<IUser>(
@@ -21,11 +20,6 @@ const userSchema = new Schema<IUser>(
       required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters long"],
       select: false // Never include password in queries by default
-    },
-    salt: {
-      type: String,
-      required: true,
-      select: false // Never include salt in queries by default
     },
     role: {
       type: String,
@@ -51,19 +45,17 @@ const userSchema = new Schema<IUser>(
   {
     timestamps: true, // Automatically adds createdAt and updatedAt
     toJSON: {
-      transform: function(doc, ret) {
+      transform: function (doc, ret) {
         // Remove sensitive fields from JSON output
         delete ret.password;
-        delete ret.salt;
         delete ret.__v;
         return ret;
       }
     },
     toObject: {
-      transform: function(doc, ret) {
+      transform: function (doc, ret) {
         // Remove sensitive fields from object output
         delete ret.password;
-        delete ret.salt;
         delete ret.__v;
         return ret;
       }
@@ -71,19 +63,16 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// Pre-save middleware to hash password with salt
-userSchema.pre("save", async function(next) {
+// Pre-save middleware to hash password
+userSchema.pre("save", async function (next) {
   // Only hash the password if it has been modified (or is new)
   if (!this.isModified("password")) return next();
 
   try {
-    // Generate a unique salt for this user
-    this.salt = crypto.randomBytes(16).toString("hex");
-    
-    // Hash the password with the salt using bcrypt
+    // Hash the password using bcrypt
     const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || "12");
-    this.password = await bcrypt.hash(this.password + this.salt, saltRounds);
-    
+    this.password = await bcrypt.hash(this.password, saltRounds);
+
     next();
   } catch (error) {
     next(error as Error);
@@ -91,14 +80,14 @@ userSchema.pre("save", async function(next) {
 });
 
 // Instance method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
   try {
-    // Get the user with password and salt fields
-    const userWithPassword = await User.findById(this._id).select("+password +salt");
+    // Get the user with password field
+    const userWithPassword = await User.findById(this._id).select("+password");
     if (!userWithPassword) return false;
-    
+
     // Compare the candidate password with the stored hash
-    return await bcrypt.compare(candidatePassword + userWithPassword.salt, userWithPassword.password);
+    return await bcrypt.compare(candidatePassword, userWithPassword.password);
   } catch (error) {
     return false;
   }

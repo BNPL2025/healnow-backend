@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { SignupRequest } from '../types/index.js';
+import jwt from 'jsonwebtoken';
+import { SignupRequest, JWTPayload, IUser } from '../types/index.js';
 import { ApiError } from '../utils/ApiError.js';
 
 // Configuration constants
@@ -12,8 +13,8 @@ const PASSWORD_MIN_LENGTH = 8;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
+    isValid: boolean;
+    errors: string[];
 }
 
 /**
@@ -21,7 +22,7 @@ export interface ValidationResult {
  * @returns {string} Base64 encoded salt
  */
 export const generateSalt = (): string => {
-  return crypto.randomBytes(SALT_LENGTH).toString('base64');
+    return crypto.randomBytes(SALT_LENGTH).toString('base64');
 };
 
 /**
@@ -31,14 +32,14 @@ export const generateSalt = (): string => {
  * @returns {Promise<string>} Hashed password
  */
 export const hashPassword = async (password: string, salt: string): Promise<string> => {
-  try {
-    // Combine password with salt before hashing
-    const saltedPassword = password + salt;
-    const hashedPassword = await bcrypt.hash(saltedPassword, BCRYPT_ROUNDS);
-    return hashedPassword;
-  } catch (error) {
-    throw new ApiError(500, 'Error hashing password');
-  }
+    try {
+        // Combine password with salt before hashing
+        const saltedPassword = password + salt;
+        const hashedPassword = await bcrypt.hash(saltedPassword, BCRYPT_ROUNDS);
+        return hashedPassword;
+    } catch (error) {
+        throw new ApiError(500, 'Error hashing password');
+    }
 };
 
 /**
@@ -47,10 +48,10 @@ export const hashPassword = async (password: string, salt: string): Promise<stri
  * @returns {boolean} True if email format is valid
  */
 export const validateEmailFormat = (email: string): boolean => {
-  if (!email || typeof email !== 'string') {
-    return false;
-  }
-  return EMAIL_REGEX.test(email.trim().toLowerCase());
+    if (!email || typeof email !== 'string') {
+        return false;
+    }
+    return EMAIL_REGEX.test(email.trim().toLowerCase());
 };
 
 /**
@@ -59,37 +60,37 @@ export const validateEmailFormat = (email: string): boolean => {
  * @returns {ValidationResult} Validation result with errors if any
  */
 export const validatePasswordStrength = (password: string): ValidationResult => {
-  const errors: string[] = [];
+    const errors: string[] = [];
 
-  if (!password || typeof password !== 'string') {
-    errors.push('Password is required');
-    return { isValid: false, errors };
-  }
+    if (!password || typeof password !== 'string') {
+        errors.push('Password is required');
+        return { isValid: false, errors };
+    }
 
-  if (password.length < PASSWORD_MIN_LENGTH) {
-    errors.push(`Password must be at least ${PASSWORD_MIN_LENGTH} characters long`);
-  }
+    if (password.length < PASSWORD_MIN_LENGTH) {
+        errors.push(`Password must be at least ${PASSWORD_MIN_LENGTH} characters long`);
+    }
 
-  if (!/[a-z]/.test(password)) {
-    errors.push('Password must contain at least one lowercase letter');
-  }
+    if (!/[a-z]/.test(password)) {
+        errors.push('Password must contain at least one lowercase letter');
+    }
 
-  if (!/[A-Z]/.test(password)) {
-    errors.push('Password must contain at least one uppercase letter');
-  }
+    if (!/[A-Z]/.test(password)) {
+        errors.push('Password must contain at least one uppercase letter');
+    }
 
-  if (!/\d/.test(password)) {
-    errors.push('Password must contain at least one number');
-  }
+    if (!/\d/.test(password)) {
+        errors.push('Password must contain at least one number');
+    }
 
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    errors.push('Password must contain at least one special character');
-  }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        errors.push('Password must contain at least one special character');
+    }
 
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
+    return {
+        isValid: errors.length === 0,
+        errors
+    };
 };
 
 /**
@@ -98,42 +99,42 @@ export const validatePasswordStrength = (password: string): ValidationResult => 
  * @returns {ValidationResult} Validation result with all errors
  */
 export const validateSignupData = (userData: SignupRequest): ValidationResult => {
-  const errors: string[] = [];
+    const errors: string[] = [];
 
-  // Validate required fields
-  if (!userData.firstName || typeof userData.firstName !== 'string' || userData.firstName.trim().length === 0) {
-    errors.push('First name is required');
-  }
-
-  if (!userData.lastName || typeof userData.lastName !== 'string' || userData.lastName.trim().length === 0) {
-    errors.push('Last name is required');
-  }
-
-  if (!userData.email || typeof userData.email !== 'string' || userData.email.trim().length === 0) {
-    errors.push('Email is required');
-  } else if (!validateEmailFormat(userData.email)) {
-    errors.push('Please provide a valid email address');
-  }
-
-  if (!userData.password) {
-    errors.push('Password is required');
-  } else {
-    const passwordValidation = validatePasswordStrength(userData.password);
-    if (!passwordValidation.isValid) {
-      errors.push(...passwordValidation.errors);
+    // Validate required fields
+    if (!userData.firstName || typeof userData.firstName !== 'string' || userData.firstName.trim().length === 0) {
+        errors.push('First name is required');
     }
-  }
 
-  if (!userData.role) {
-    errors.push('Role is required');
-  } else if (!['patient', 'doctor'].includes(userData.role)) {
-    errors.push('Role must be either "patient" or "doctor"');
-  }
+    if (!userData.lastName || typeof userData.lastName !== 'string' || userData.lastName.trim().length === 0) {
+        errors.push('Last name is required');
+    }
 
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
+    if (!userData.email || typeof userData.email !== 'string' || userData.email.trim().length === 0) {
+        errors.push('Email is required');
+    } else if (!validateEmailFormat(userData.email)) {
+        errors.push('Please provide a valid email address');
+    }
+
+    if (!userData.password) {
+        errors.push('Password is required');
+    } else {
+        const passwordValidation = validatePasswordStrength(userData.password);
+        if (!passwordValidation.isValid) {
+            errors.push(...passwordValidation.errors);
+        }
+    }
+
+    if (!userData.role) {
+        errors.push('Role is required');
+    } else if (!['patient', 'doctor'].includes(userData.role)) {
+        errors.push('Role must be either "patient" or "doctor"');
+    }
+
+    return {
+        isValid: errors.length === 0,
+        errors
+    };
 };
 
 /**
@@ -144,14 +145,54 @@ export const validateSignupData = (userData: SignupRequest): ValidationResult =>
  * @returns {Promise<boolean>} True if password matches
  */
 export const verifyPassword = async (
-  password: string, 
-  salt: string, 
-  hashedPassword: string
+    password: string,
+    salt: string,
+    hashedPassword: string
 ): Promise<boolean> => {
-  try {
-    const saltedPassword = password + salt;
-    return await bcrypt.compare(saltedPassword, hashedPassword);
-  } catch (error) {
-    throw new ApiError(500, 'Error verifying password');
-  }
+    try {
+        const saltedPassword = password + salt;
+        return await bcrypt.compare(saltedPassword, hashedPassword);
+    } catch (error) {
+        throw new ApiError(500, 'Error verifying password');
+    }
+};
+
+/**
+ * Generates a JWT token for authenticated user
+ * @param {IUser} user - User object
+ * @returns {string} JWT token
+ */
+export const generateToken = (user: IUser): string => {
+    const payload: JWTPayload = {
+        _id: user._id.toString(),
+        email: user.email,
+        role: user.role
+    };
+
+    const secret = process.env.ACCESS_TOKEN_SECRET;
+    if (!secret) {
+        throw new ApiError(500, 'JWT secret not configured');
+    }
+
+    const expiresIn = process.env.ACCESS_TOKEN_EXPIRY || '7d';
+
+    return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
+};
+
+/**
+ * Verifies and decodes a JWT token
+ * @param {string} token - JWT token to verify
+ * @returns {JWTPayload} Decoded token payload
+ */
+export const verifyToken = (token: string): JWTPayload => {
+    const secret = process.env.ACCESS_TOKEN_SECRET;
+    if (!secret) {
+        throw new ApiError(500, 'JWT secret not configured');
+    }
+
+    try {
+        return jwt.verify(token, secret) as JWTPayload;
+    } catch (error) {
+        throw new ApiError(401, 'Invalid or expired token');
+    }
 };

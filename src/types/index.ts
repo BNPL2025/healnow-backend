@@ -12,6 +12,7 @@ export interface IUser extends Document {
   lastName: string;
   createdAt: Date;
   updatedAt: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 // Request interface for user signup
@@ -53,4 +54,16 @@ export interface JWTPayload {
   _id: string;
   email: string;
   role: 'patient' | 'doctor';
+}
+
+// Request interface for user login
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+// Response interface for user login
+export interface LoginResponse {
+  user: UserResponse;
+  token: string;
 }

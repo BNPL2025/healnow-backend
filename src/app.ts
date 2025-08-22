@@ -29,9 +29,13 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 // ROUTES IMPORT
-import userRouter from './routes/user.route.js'
+import authRouter from './routes/auth.route.js'
+import { errorHandler } from './middlewares/errorHandler.middleware.js';
 
 // ROUTES DECLARATION
-app.use("/api/users", userRouter)
+app.use("/api/auth", authRouter)
+
+// Global error handling middleware (must be last)
+app.use(errorHandler);
 
 export { app };
