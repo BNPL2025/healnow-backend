@@ -1,1 +1,1 @@
-export const DB_NAME = "VedioTube" as const;
+export const DB_NAME = "denthica" as const;

@@ -22,14 +22,23 @@ export const verifyJWT = asyncHandler(
       ) as JWTPayload;
 
       const user = await User.findById(decodedToken?._id).select(
-        "-password -refreshToken"
+        "-password -salt"
       );
 
       if (!user) {
         throw new ApiError(401, "Invalid access token");
       }
 
-      req.user = user;
+      // Convert MongoDB document to UserResponse format
+      req.user = {
+        _id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      };
       next();
     } catch (error: any) {
       throw new ApiError(401, error?.message || "Invalid access token");
