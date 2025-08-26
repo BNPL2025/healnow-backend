@@ -20,14 +20,14 @@ app.use(
 
 app.use(
   express.json({
-    limit: "10kb", // Maximum request body size.
+    limit: "50mb", // Maximum request body size - increased for image data.
   })
 );
 
 app.use(
   express.urlencoded({
     extended: true,
-    limit: "10kb",
+    limit: "50mb", // Increased for image data
   })
 );
 
@@ -37,10 +37,12 @@ app.use(cookieParser());
 
 // ROUTES IMPORT
 import authRouter from './routes/auth.route.js'
+import analysisRouter from './routes/analysis.route.js'
 import { errorHandler } from './middlewares/errorHandler.middleware.js';
 
 // ROUTES DECLARATION
 app.use("/api/auth", authRouter)
+app.use("/api/analysis", analysisRouter)
 
 // Global error handling middleware (must be last)
 app.use(errorHandler);

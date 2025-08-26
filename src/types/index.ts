@@ -58,3 +58,56 @@ export interface LoginResponse {
   user: UserResponse;
   token: string;
 }
+
+// Dental Analysis Types
+
+// Request interface for dental analysis
+export interface AnalysisRequest {
+  dentistName: string;
+  dentistMobileNumber: string;
+  patientName?: string;
+  toothImage1: string; // data URI
+  toothImage2: string; // data URI
+}
+
+// Zonal analysis interface for tooth shade analysis
+export interface ZonalAnalysis {
+  zone: 'Cervical Third' | 'Middle Third' | 'Incisal Third';
+  vita_classical: string;
+  vita_3d_master: string;
+  notes: string;
+}
+
+// Layered recommendation interface for dental restoration
+export interface LayeredRecommendation {
+  dentin_layer: string;
+  enamel_layer: string;
+  cervical_tint: string;
+}
+
+// Final recommendation interface containing complete analysis
+export interface FinalRecommendation {
+  estimated_tooth_type: string;
+  zonal_analysis: ZonalAnalysis[];
+  general_suggestion: string;
+  layered_recommendation: LayeredRecommendation;
+}
+
+// Analysis record interface for storing complete analysis data
+export interface AnalysisRecord {
+  id: string;
+  dentistName: string;
+  dentistMobileNumber: string;
+  patientName?: string;
+  toothImage1: string;
+  toothImage2: string;
+  date: string;
+  analysis: {
+    final_recommendation: FinalRecommendation;
+  };
+}
+
+// Response interface for analysis API endpoint
+export interface AnalysisResponse {
+  record: AnalysisRecord;
+}
