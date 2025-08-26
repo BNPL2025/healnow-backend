@@ -4,7 +4,7 @@ import { validateSignupData, generateToken } from '../services/auth.service.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { SignupRequest, SignupResponse, LoginRequest, LoginResponse, UserResponse, AuthenticatedRequest } from '../types/index.js';
+import { SignupRequest, LoginRequest, LoginResponse, UserResponse, AuthenticatedRequest } from '../types/index.js';
 
 /**
  * User signup controller
@@ -44,8 +44,11 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     // Save user to database
     const savedUser = await newUser.save();
 
-    // Prepare sanitized response data
-    const responseData: SignupResponse = {
+    // Generate JWT token for the new user
+    const token = generateToken(savedUser);
+
+    // Prepare sanitized user response data
+    const userResponse: UserResponse = {
       _id: savedUser._id.toString(),
       email: savedUser.email,
       role: savedUser.role,
@@ -54,6 +57,19 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
       createdAt: savedUser.createdAt,
       updatedAt: savedUser.updatedAt
     };
+
+    const responseData: LoginResponse = {
+      user: userResponse,
+      token
+    };
+
+    // Set token as httpOnly cookie for additional security
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
 
     // Return success response
     res.status(201).json(
@@ -148,7 +164,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
  * @route POST /api/auth/logout
  * @access Private
  */
-export const logout = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+export const logout = asyncHandler(async (_req: AuthenticatedRequest, res: Response) => {
   // Clear the token cookie
   res.clearCookie('token', {
     httpOnly: true,

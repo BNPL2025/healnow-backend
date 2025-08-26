@@ -24,16 +24,7 @@ export interface SignupRequest {
   lastName: string;
 }
 
-// Response interface for user signup (excludes sensitive fields)
-export interface SignupResponse {
-  _id: string;
-  email: string;
-  role: 'patient' | 'doctor';
-  firstName: string;
-  lastName: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+
 
 // Sanitized user interface for general use (excludes sensitive fields)
 export interface UserResponse {
